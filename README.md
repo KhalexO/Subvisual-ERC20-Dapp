@@ -18,6 +18,7 @@ This project demonstrates smart contract development with Solidity, automated te
 - Automatic UI updates after transactions
 - Input validation with user feedback
 - Automated smart contract tests
+- Supports both local development and testnet deployment
 
 ---
 
@@ -40,9 +41,10 @@ Frontend:
 
 ## Architecture Notes
 
-Next.js was chosen over Vite to reflect a production-ready Web3 setup.
-All blockchain interactions run client-side (CSR), which is required for wallet-based applications.
-No server-side rendering is used for blockchain logic.
+- The frontend is fully client-side rendered, which is required for wallet-based Web3 applications.
+- Network selection is determined by the connected wallet (`chainId`).
+- The frontend dynamically selects the correct contract address per network.
+- The same UI works seamlessly for local development (Anvil) and testnet (Sepolia).
 
 ---
 
@@ -65,6 +67,12 @@ Implemented using Foundry:
 - Transfers update balances
 - Burn reduces total supply
 
+Run tests:
+
+```bash
+cd contracts
+forge test
+```
 ---
 
 ## Prerequisites
@@ -78,7 +86,7 @@ Ensure Node.js (>=18) and pnpm are installed.
 
 ---
 
-## Local Development
+## Local Development(Anvil)
 
 This project runs using three terminals.
 
@@ -93,7 +101,7 @@ cd contracts
 forge script script/Deploy.s.sol \
   --rpc-url http://localhost:8545 \
   --broadcast \
-  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+  --private-key <ANVIL_PRIVATE_KEY>
 ```
 Terminal 3 – Run frontend:
 ```shell
@@ -103,12 +111,26 @@ pnpm dev
 ```
 ---
 
-## Environment Variables
+## Testnet Deployment (Sepolia)
+
+The contract is deployed on Sepolia and can be interacted with using a real wallet.
+Anyone can interact with the token using their own wallet, but minting is restricted to the owner.
+
+Environment setup
 
 Create frontend/.env.local:
 
-NEXT_PUBLIC_RPC_URL=http://localhost:8545
-NEXT_PUBLIC_CONTRACT_ADDRESS=0xYourDeployedContractAddress
+NEXT_PUBLIC_SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY
+
+Run frontend:
+```shell
+cd frontend
+pnpm dev
+```
+
+- Switch MetaMask to Sepolia
+- The frontend automatically connects to the Sepolia contract
+- No redeployment is required unless the contract changes
 
 ---
 
@@ -117,6 +139,7 @@ NEXT_PUBLIC_CONTRACT_ADDRESS=0xYourDeployedContractAddress
 - Mint is only visible to the contract owner
 - UI updates automatically after transactions
 - Multiple accounts can be tested using different browser profiles
+- .env.local is intentionally not committed
 
 ---
 
@@ -125,5 +148,5 @@ NEXT_PUBLIC_CONTRACT_ADDRESS=0xYourDeployedContractAddress
 - Wallet connection: implemented
 - Smart contract interaction: implemented
 - Automated tests: implemented
-- Optional testnet deployment: not included (local Anvil setup only)
+- Optional testnet deployment: implemented
 

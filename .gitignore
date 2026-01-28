@@ -9,3 +9,5 @@ node_modules
 broadcast
 cache
 out
+contracts/broadcast/
+contracts/cache/
