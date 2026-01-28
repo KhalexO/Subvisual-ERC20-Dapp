@@ -1,0 +1,11 @@
+# env
+.env.local
+
+# node
+node_modules
+.next
+
+# foundry
+broadcast
+cache
+out
