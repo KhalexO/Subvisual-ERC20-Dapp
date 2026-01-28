@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.90.20
+        version: 5.90.20(react@19.2.3)
       next:
         specifier: 16.1.6
         version: 16.1.6(@babel/core@7.28.6)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
