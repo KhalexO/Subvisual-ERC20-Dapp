@@ -6,8 +6,7 @@ node_modules
 .next
 
 # foundry
-broadcast
-cache
-out
-contracts/broadcast/
-contracts/cache/
+/contracts/broadcast/
+/contracts/cache/
+/contracts/out/
+
