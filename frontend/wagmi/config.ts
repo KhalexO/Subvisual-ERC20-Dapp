@@ -1,9 +1,9 @@
 import { createConfig, http } from "wagmi";
 import { injected } from "wagmi/connectors";
-import { localhost } from "wagmi/chains";
+import { localhost, sepolia } from "wagmi/chains";
 
 export const wagmiConfig = createConfig({
-  chains: [localhost],
+  chains: [localhost, sepolia],
 
   connectors: [
     injected({
@@ -12,11 +12,15 @@ export const wagmiConfig = createConfig({
   ],
 
   transports: {
-    [localhost.id]: http(process.env.NEXT_PUBLIC_RPC_URL),
+    [localhost.id]: http("http://127.0.0.1:8545"),
+    [sepolia.id]: http(process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL!),
   },
 
   storage: null,
 });
+
+
+
 
 
 

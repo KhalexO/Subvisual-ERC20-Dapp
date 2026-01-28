@@ -5,9 +5,11 @@ import {
     useReadContract,
     useWriteContract,
     useWaitForTransactionReceipt,
+    useChainId,
 } from "wagmi";
 import { parseUnits } from "viem";
-import { tokenAbi, tokenAddress } from "@/lib/contracts";
+import { tokenAbi } from "@/lib/token";
+import { CONTRACTS } from "@/lib/contracts";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -16,12 +18,17 @@ export function BurnToken() {
     const [error, setError] = useState<string | null>(null);
 
     const { address } = useAccount();
+    const chainId = useChainId();
     const queryClient = useQueryClient();
+
+    const tokenAddress =
+        CONTRACTS[chainId as keyof typeof CONTRACTS]?.token ?? null;
 
     const { data: decimals } = useReadContract({
         abi: tokenAbi,
         address: tokenAddress,
         functionName: "decimals",
+        query: { enabled: Boolean(tokenAddress) },
     });
 
     const {
@@ -31,7 +38,8 @@ export function BurnToken() {
         isPending,
     } = useWriteContract();
 
-    const { isSuccess, isError } = useWaitForTransactionReceipt({ hash });
+    const { isSuccess, isError } =
+        useWaitForTransactionReceipt({ hash });
 
     useEffect(() => {
         if (isSuccess) {
@@ -53,12 +61,20 @@ export function BurnToken() {
 
     if (!address) return null;
 
+    if (!tokenAddress) {
+        return (
+            <p className="text-sm text-zinc-500">
+                Unsupported network
+            </p>
+        );
+    }
+
     const validAmount = Number(amount) > 0;
-    const isValid = validAmount && decimals !== undefined;
+    const isValid =
+        validAmount && decimals !== undefined;
 
     function onBurn() {
         if (!isValid || !decimals) return;
-        setError(null);
 
         writeContract({
             abi: tokenAbi,
@@ -70,7 +86,9 @@ export function BurnToken() {
 
     return (
         <div className="rounded border p-4 space-y-3 w-[320px]">
-            <h3 className="font-semibold text-center">Burn</h3>
+            <h3 className="font-semibold text-center">
+                Burn
+            </h3>
 
             <input
                 className="w-full rounded border px-2 py-1"
@@ -79,10 +97,16 @@ export function BurnToken() {
                 onChange={(e) => setAmount(e.target.value)}
             />
             {!validAmount && amount !== "" && (
-                <p className="text-xs text-red-500">Invalid amount</p>
+                <p className="text-xs text-red-500">
+                    Invalid amount
+                </p>
             )}
 
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            {error && (
+                <p className="text-xs text-red-600">
+                    {error}
+                </p>
+            )}
 
             <button
                 onClick={onBurn}
@@ -94,6 +118,8 @@ export function BurnToken() {
         </div>
     );
 }
+
+
 
 
 

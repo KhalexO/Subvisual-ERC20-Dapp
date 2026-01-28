@@ -5,9 +5,11 @@ import {
     useReadContract,
     useWriteContract,
     useWaitForTransactionReceipt,
+    useChainId,
 } from "wagmi";
 import { parseUnits, isAddress } from "viem";
-import { tokenAbi, tokenAddress } from "@/lib/contracts";
+import { tokenAbi } from "@/lib/token";
+import { CONTRACTS } from "@/lib/contracts";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -17,18 +19,24 @@ export function MintToken() {
     const [error, setError] = useState<string | null>(null);
 
     const { address } = useAccount();
+    const chainId = useChainId();
     const queryClient = useQueryClient();
+
+    const tokenAddress =
+        CONTRACTS[chainId as keyof typeof CONTRACTS]?.token ?? null;
 
     const { data: owner } = useReadContract({
         abi: tokenAbi,
         address: tokenAddress,
         functionName: "owner",
+        query: { enabled: Boolean(tokenAddress) },
     });
 
     const { data: decimals } = useReadContract({
         abi: tokenAbi,
         address: tokenAddress,
         functionName: "decimals",
+        query: { enabled: Boolean(tokenAddress) },
     });
 
     const {
@@ -38,7 +46,8 @@ export function MintToken() {
         isPending,
     } = useWriteContract();
 
-    const { isSuccess, isError } = useWaitForTransactionReceipt({ hash });
+    const { isSuccess, isError } =
+        useWaitForTransactionReceipt({ hash });
 
     useEffect(() => {
         if (isSuccess) {
@@ -55,16 +64,29 @@ export function MintToken() {
         }
     }, [isError, writeError]);
 
-    if (!address || !owner) return null;
-    if (address.toLowerCase() !== owner.toLowerCase()) return null;
+    if (!address) return null;
+
+    if (!tokenAddress) {
+        return (
+            <p className="text-sm text-zinc-500">
+                Unsupported network
+            </p>
+        );
+    }
+
+    if (!owner) return null;
+
+    if (address.toLowerCase() !== owner.toLowerCase()) {
+        return null;
+    }
 
     const validAddress = isAddress(to);
     const validAmount = Number(amount) > 0;
-    const isValid = validAddress && validAmount && decimals !== undefined;
+    const isValid =
+        validAddress && validAmount && decimals !== undefined;
 
     function onMint() {
         if (!isValid || !decimals) return;
-        setError(null);
 
         writeContract({
             abi: tokenAbi,
@@ -76,7 +98,9 @@ export function MintToken() {
 
     return (
         <div className="rounded border p-4 space-y-3 w-[320px]">
-            <h3 className="font-semibold text-center">Mint (Owner only)</h3>
+            <h3 className="font-semibold text-center">
+                Mint (Owner only)
+            </h3>
 
             <input
                 className="w-full rounded border px-2 py-1"
@@ -85,7 +109,9 @@ export function MintToken() {
                 onChange={(e) => setTo(e.target.value)}
             />
             {!validAddress && to !== "" && (
-                <p className="text-xs text-red-500">Invalid address</p>
+                <p className="text-xs text-red-500">
+                    Invalid address
+                </p>
             )}
 
             <input
@@ -95,10 +121,16 @@ export function MintToken() {
                 onChange={(e) => setAmount(e.target.value)}
             />
             {!validAmount && amount !== "" && (
-                <p className="text-xs text-red-500">Invalid amount</p>
+                <p className="text-xs text-red-500">
+                    Invalid amount
+                </p>
             )}
 
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            {error && (
+                <p className="text-xs text-red-600">
+                    {error}
+                </p>
+            )}
 
             <button
                 onClick={onMint}
@@ -110,6 +142,8 @@ export function MintToken() {
         </div>
     );
 }
+
+
 
 
 

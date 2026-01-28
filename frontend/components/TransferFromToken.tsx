@@ -5,9 +5,11 @@ import {
     useReadContract,
     useWriteContract,
     useWaitForTransactionReceipt,
+    useChainId,
 } from "wagmi";
 import { parseUnits, formatUnits, isAddress } from "viem";
-import { tokenAbi, tokenAddress } from "@/lib/contracts";
+import { tokenAbi } from "@/lib/token";
+import { CONTRACTS } from "@/lib/contracts";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -18,21 +20,34 @@ export function TransferFromToken() {
     const [error, setError] = useState<string | null>(null);
 
     const { address: spender } = useAccount();
+    const chainId = useChainId();
     const queryClient = useQueryClient();
+
+    const tokenAddress =
+        CONTRACTS[chainId as keyof typeof CONTRACTS]?.token ?? null;
 
     const { data: decimals } = useReadContract({
         abi: tokenAbi,
         address: tokenAddress,
         functionName: "decimals",
+        query: { enabled: Boolean(tokenAddress) },
     });
 
-    const { data: allowance, refetch: refetchAllowance } = useReadContract({
-        abi: tokenAbi,
-        address: tokenAddress,
-        functionName: "allowance",
-        args: isAddress(owner) && spender ? [owner, spender] : undefined,
-        query: { enabled: Boolean(isAddress(owner) && spender) },
-    });
+    const { data: allowance, refetch: refetchAllowance } =
+        useReadContract({
+            abi: tokenAbi,
+            address: tokenAddress,
+            functionName: "allowance",
+            args:
+                isAddress(owner) && spender
+                    ? [owner, spender]
+                    : undefined,
+            query: {
+                enabled: Boolean(
+                    tokenAddress && isAddress(owner) && spender
+                ),
+            },
+        });
 
     const {
         writeContract,
@@ -41,12 +56,12 @@ export function TransferFromToken() {
         isPending,
     } = useWriteContract();
 
-    const { isSuccess, isError } = useWaitForTransactionReceipt({ hash });
+    const { isSuccess, isError } =
+        useWaitForTransactionReceipt({ hash });
 
     useEffect(() => {
         if (isSuccess) {
             queryClient.invalidateQueries();
-            queryClient.refetchQueries();
             refetchAllowance();
 
             setOwner("");
@@ -68,6 +83,14 @@ export function TransferFromToken() {
 
     if (!spender) return null;
 
+    if (!tokenAddress) {
+        return (
+            <p className="text-sm text-zinc-500">
+                Unsupported network
+            </p>
+        );
+    }
+
     const validOwner = isAddress(owner);
     const validTo = isAddress(to);
     const validAmount = Number(amount) > 0;
@@ -76,7 +99,6 @@ export function TransferFromToken() {
 
     function onTransferFrom() {
         if (!isValid || !decimals) return;
-        setError(null);
 
         writeContract({
             abi: tokenAbi,
@@ -88,7 +110,9 @@ export function TransferFromToken() {
 
     return (
         <div className="rounded border p-4 space-y-3 w-[320px]">
-            <h3 className="font-semibold text-center">Transfer From</h3>
+            <h3 className="font-semibold text-center">
+                Transfer From
+            </h3>
 
             <input
                 className="w-full rounded border px-2 py-1"
@@ -97,7 +121,9 @@ export function TransferFromToken() {
                 onChange={(e) => setOwner(e.target.value)}
             />
             {!validOwner && owner !== "" && (
-                <p className="text-xs text-red-500">Invalid owner address</p>
+                <p className="text-xs text-red-500">
+                    Invalid owner address
+                </p>
             )}
 
             <input
@@ -107,7 +133,9 @@ export function TransferFromToken() {
                 onChange={(e) => setTo(e.target.value)}
             />
             {!validTo && to !== "" && (
-                <p className="text-xs text-red-500">Invalid recipient address</p>
+                <p className="text-xs text-red-500">
+                    Invalid recipient address
+                </p>
             )}
 
             <input
@@ -117,10 +145,16 @@ export function TransferFromToken() {
                 onChange={(e) => setAmount(e.target.value)}
             />
             {!validAmount && amount !== "" && (
-                <p className="text-xs text-red-500">Invalid amount</p>
+                <p className="text-xs text-red-500">
+                    Invalid amount
+                </p>
             )}
 
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            {error && (
+                <p className="text-xs text-red-600">
+                    {error}
+                </p>
+            )}
 
             <button
                 onClick={onTransferFrom}
@@ -132,12 +166,15 @@ export function TransferFromToken() {
 
             {allowance !== undefined && decimals !== undefined && (
                 <p className="text-sm text-zinc-600 text-center">
-                    Allowance: {formatUnits(allowance, decimals)}
+                    Allowance:{" "}
+                    {formatUnits(allowance, decimals)}
                 </p>
             )}
         </div>
     );
 }
+
+
 
 
 
