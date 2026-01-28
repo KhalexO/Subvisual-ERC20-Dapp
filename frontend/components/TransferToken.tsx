@@ -11,19 +11,13 @@ import { tokenAbi, tokenAddress } from "@/lib/contracts";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
-export function MintToken() {
+export function TransferToken() {
     const [to, setTo] = useState("");
     const [amount, setAmount] = useState("");
     const [error, setError] = useState<string | null>(null);
 
     const { address } = useAccount();
     const queryClient = useQueryClient();
-
-    const { data: owner } = useReadContract({
-        abi: tokenAbi,
-        address: tokenAddress,
-        functionName: "owner",
-    });
 
     const { data: decimals } = useReadContract({
         abi: tokenAbi,
@@ -42,7 +36,11 @@ export function MintToken() {
 
     useEffect(() => {
         if (isSuccess) {
+            // 🔥 força refresh imediato
             queryClient.invalidateQueries();
+            queryClient.refetchQueries();
+
+            // 🧹 limpar inputs
             setTo("");
             setAmount("");
             setError(null);
@@ -51,32 +49,35 @@ export function MintToken() {
 
     useEffect(() => {
         if (isError || writeError) {
-            setError("Transaction failed");
+            const msg =
+                writeError?.message?.includes("exceeds balance")
+                    ? "Insufficient balance"
+                    : "Transaction failed";
+            setError(msg);
         }
     }, [isError, writeError]);
 
-    if (!address || !owner) return null;
-    if (address.toLowerCase() !== owner.toLowerCase()) return null;
+    if (!address) return null;
 
     const validAddress = isAddress(to);
     const validAmount = Number(amount) > 0;
     const isValid = validAddress && validAmount && decimals !== undefined;
 
-    function onMint() {
+    function onTransfer() {
         if (!isValid || !decimals) return;
         setError(null);
 
         writeContract({
             abi: tokenAbi,
             address: tokenAddress,
-            functionName: "mint",
+            functionName: "transfer",
             args: [to, parseUnits(amount, decimals)],
         });
     }
 
     return (
         <div className="rounded border p-4 space-y-3 w-[320px]">
-            <h3 className="font-semibold text-center">Mint (Owner only)</h3>
+            <h3 className="font-semibold text-center">Transfer</h3>
 
             <input
                 className="w-full rounded border px-2 py-1"
@@ -101,11 +102,11 @@ export function MintToken() {
             {error && <p className="text-xs text-red-600">{error}</p>}
 
             <button
-                onClick={onMint}
+                onClick={onTransfer}
                 disabled={!isValid || isPending}
                 className="w-full rounded border px-4 py-2 disabled:opacity-50"
             >
-                {isPending ? "Minting…" : "Mint"}
+                {isPending ? "Sending…" : "Transfer"}
             </button>
         </div>
     );

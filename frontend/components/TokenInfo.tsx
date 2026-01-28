@@ -33,6 +33,12 @@ export function TokenInfo() {
         query: { enabled: Boolean(address) },
     });
 
+    const { data: totalSupply } = useReadContract({
+        abi: tokenAbi,
+        address: tokenAddress,
+        functionName: "totalSupply",
+    });
+
     if (!address) {
         return (
             <p className="text-sm text-zinc-500">
@@ -47,16 +53,23 @@ export function TokenInfo() {
                 {name} {symbol ? `(${symbol})` : ""}
             </h2>
 
-            {balance !== undefined && decimals !== undefined ? (
+            {balance !== undefined && decimals !== undefined && (
                 <p className="font-mono">
                     Balance: {formatUnits(balance, decimals)}
                 </p>
-            ) : (
-                <p className="text-sm text-zinc-500">Loading balance…</p>
+            )}
+
+            {totalSupply !== undefined && decimals !== undefined && (
+                <p className="text-sm text-zinc-600">
+                    Total supply: {formatUnits(totalSupply, decimals)}
+                </p>
             )}
         </div>
     );
 }
+
+
+
 
 
 

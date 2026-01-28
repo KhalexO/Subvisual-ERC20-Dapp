@@ -1,15 +1,23 @@
 "use client";
 
-import { useAccount, useReadContract, useWriteContract } from "wagmi";
+import {
+    useAccount,
+    useReadContract,
+    useWriteContract,
+    useWaitForTransactionReceipt,
+} from "wagmi";
 import { parseUnits, formatUnits, isAddress } from "viem";
 import { tokenAbi, tokenAddress } from "@/lib/contracts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function ApproveToken() {
     const [spender, setSpender] = useState("");
     const [amount, setAmount] = useState("");
+    const [error, setError] = useState<string | null>(null);
 
     const { address } = useAccount();
+    const queryClient = useQueryClient();
 
     const { data: decimals } = useReadContract({
         abi: tokenAbi,
@@ -17,7 +25,7 @@ export function ApproveToken() {
         functionName: "decimals",
     });
 
-    const { data: allowance } = useReadContract({
+    const { data: allowance, refetch: refetchAllowance } = useReadContract({
         abi: tokenAbi,
         address: tokenAddress,
         functionName: "allowance",
@@ -25,18 +33,42 @@ export function ApproveToken() {
         query: { enabled: Boolean(address && isAddress(spender)) },
     });
 
-    const { writeContract, isPending } = useWriteContract();
+    const {
+        writeContract,
+        data: hash,
+        error: writeError,
+        isPending,
+    } = useWriteContract();
+
+    const { isSuccess, isError } = useWaitForTransactionReceipt({ hash });
+
+    useEffect(() => {
+        if (isSuccess) {
+            queryClient.invalidateQueries();
+            queryClient.refetchQueries();
+            refetchAllowance();
+
+            setSpender("");
+            setAmount("");
+            setError(null);
+        }
+    }, [isSuccess, queryClient, refetchAllowance]);
+
+    useEffect(() => {
+        if (isError || writeError) {
+            setError("Transaction failed");
+        }
+    }, [isError, writeError]);
 
     if (!address) return null;
 
-    const isValid =
-        isAddress(spender) &&
-        amount !== "" &&
-        Number(amount) > 0 &&
-        decimals !== undefined;
+    const validAddress = isAddress(spender);
+    const validAmount = Number(amount) > 0;
+    const isValid = validAddress && validAmount && decimals !== undefined;
 
     function onApprove() {
         if (!isValid || !decimals) return;
+        setError(null);
 
         writeContract({
             abi: tokenAbi,
@@ -56,6 +88,9 @@ export function ApproveToken() {
                 value={spender}
                 onChange={(e) => setSpender(e.target.value)}
             />
+            {!validAddress && spender !== "" && (
+                <p className="text-xs text-red-500">Invalid address</p>
+            )}
 
             <input
                 className="w-full rounded border px-2 py-1"
@@ -63,6 +98,11 @@ export function ApproveToken() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
             />
+            {!validAmount && amount !== "" && (
+                <p className="text-xs text-red-500">Invalid amount</p>
+            )}
+
+            {error && <p className="text-xs text-red-600">{error}</p>}
 
             <button
                 onClick={onApprove}
@@ -80,4 +120,7 @@ export function ApproveToken() {
         </div>
     );
 }
+
+
+
 

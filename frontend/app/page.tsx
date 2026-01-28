@@ -2,6 +2,7 @@ import { ConnectWallet } from "@/components/ConnectWallet";
 import { TokenInfo } from "@/components/TokenInfo";
 import { ApproveToken } from "@/components/ApproveToken";
 import { TransferFromToken } from "@/components/TransferFromToken";
+import { TransferToken } from "@/components/TransferToken";
 import { MintToken } from "@/components/MintToken";
 import { BurnToken } from "@/components/BurnToken";
 import { ClientOnly } from "@/components/ClientOnly";
@@ -22,6 +23,7 @@ export default function Home() {
         <div className="flex flex-wrap gap-6 justify-center">
           <ApproveToken />
           <TransferFromToken />
+          <TransferToken />
           <MintToken />
           <BurnToken />
         </div>
@@ -29,6 +31,7 @@ export default function Home() {
     </main>
   );
 }
+
 
 
 

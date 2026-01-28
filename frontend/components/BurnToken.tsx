@@ -1,13 +1,22 @@
 "use client";
 
-import { useAccount, useReadContract, useWriteContract } from "wagmi";
+import {
+    useAccount,
+    useReadContract,
+    useWriteContract,
+    useWaitForTransactionReceipt,
+} from "wagmi";
 import { parseUnits } from "viem";
 import { tokenAbi, tokenAddress } from "@/lib/contracts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function BurnToken() {
     const [amount, setAmount] = useState("");
+    const [error, setError] = useState<string | null>(null);
+
     const { address } = useAccount();
+    const queryClient = useQueryClient();
 
     const { data: decimals } = useReadContract({
         abi: tokenAbi,
@@ -15,17 +24,41 @@ export function BurnToken() {
         functionName: "decimals",
     });
 
-    const { writeContract, isPending } = useWriteContract();
+    const {
+        writeContract,
+        data: hash,
+        error: writeError,
+        isPending,
+    } = useWriteContract();
+
+    const { isSuccess, isError } = useWaitForTransactionReceipt({ hash });
+
+    useEffect(() => {
+        if (isSuccess) {
+            queryClient.invalidateQueries();
+            setAmount("");
+            setError(null);
+        }
+    }, [isSuccess, queryClient]);
+
+    useEffect(() => {
+        if (isError || writeError) {
+            const msg =
+                writeError?.message?.includes("exceeds balance")
+                    ? "Insufficient balance"
+                    : "Transaction failed";
+            setError(msg);
+        }
+    }, [isError, writeError]);
 
     if (!address) return null;
 
-    const isValid =
-        amount !== "" &&
-        Number(amount) > 0 &&
-        decimals !== undefined;
+    const validAmount = Number(amount) > 0;
+    const isValid = validAmount && decimals !== undefined;
 
     function onBurn() {
         if (!isValid || !decimals) return;
+        setError(null);
 
         writeContract({
             abi: tokenAbi,
@@ -45,6 +78,11 @@ export function BurnToken() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
             />
+            {!validAmount && amount !== "" && (
+                <p className="text-xs text-red-500">Invalid amount</p>
+            )}
+
+            {error && <p className="text-xs text-red-600">{error}</p>}
 
             <button
                 onClick={onBurn}
@@ -56,4 +94,7 @@ export function BurnToken() {
         </div>
     );
 }
+
+
+
 

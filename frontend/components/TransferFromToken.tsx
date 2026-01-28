@@ -1,16 +1,24 @@
 "use client";
 
-import { useAccount, useReadContract, useWriteContract } from "wagmi";
+import {
+    useAccount,
+    useReadContract,
+    useWriteContract,
+    useWaitForTransactionReceipt,
+} from "wagmi";
 import { parseUnits, formatUnits, isAddress } from "viem";
 import { tokenAbi, tokenAddress } from "@/lib/contracts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function TransferFromToken() {
     const [owner, setOwner] = useState("");
     const [to, setTo] = useState("");
     const [amount, setAmount] = useState("");
+    const [error, setError] = useState<string | null>(null);
 
     const { address: spender } = useAccount();
+    const queryClient = useQueryClient();
 
     const { data: decimals } = useReadContract({
         abi: tokenAbi,
@@ -18,40 +26,63 @@ export function TransferFromToken() {
         functionName: "decimals",
     });
 
-    const { data: allowance } = useReadContract({
+    const { data: allowance, refetch: refetchAllowance } = useReadContract({
         abi: tokenAbi,
         address: tokenAddress,
         functionName: "allowance",
-        args:
-            isAddress(owner) && spender
-                ? [owner, spender]
-                : undefined,
+        args: isAddress(owner) && spender ? [owner, spender] : undefined,
         query: { enabled: Boolean(isAddress(owner) && spender) },
     });
 
-    const { writeContract, isPending } = useWriteContract();
+    const {
+        writeContract,
+        data: hash,
+        error: writeError,
+        isPending,
+    } = useWriteContract();
+
+    const { isSuccess, isError } = useWaitForTransactionReceipt({ hash });
+
+    useEffect(() => {
+        if (isSuccess) {
+            queryClient.invalidateQueries();
+            queryClient.refetchQueries();
+            refetchAllowance();
+
+            setOwner("");
+            setTo("");
+            setAmount("");
+            setError(null);
+        }
+    }, [isSuccess, queryClient, refetchAllowance]);
+
+    useEffect(() => {
+        if (isError || writeError) {
+            const msg =
+                writeError?.message?.includes("allowance")
+                    ? "Insufficient allowance"
+                    : "Transaction failed";
+            setError(msg);
+        }
+    }, [isError, writeError]);
 
     if (!spender) return null;
 
+    const validOwner = isAddress(owner);
+    const validTo = isAddress(to);
+    const validAmount = Number(amount) > 0;
     const isValid =
-        isAddress(owner) &&
-        isAddress(to) &&
-        amount !== "" &&
-        Number(amount) > 0 &&
-        decimals !== undefined;
+        validOwner && validTo && validAmount && decimals !== undefined;
 
     function onTransferFrom() {
         if (!isValid || !decimals) return;
+        setError(null);
 
         writeContract({
             abi: tokenAbi,
             address: tokenAddress,
             functionName: "transferFrom",
-            args: [
-                owner,
-                to,
-                parseUnits(amount, decimals),
-            ],
+            args: [owner, to, parseUnits(amount, decimals)],
         });
     }
 
@@ -65,6 +96,9 @@ export function TransferFromToken() {
                 value={owner}
                 onChange={(e) => setOwner(e.target.value)}
             />
+            {!validOwner && owner !== "" && (
+                <p className="text-xs text-red-500">Invalid owner address</p>
+            )}
 
             <input
                 className="w-full rounded border px-2 py-1"
@@ -72,6 +106,9 @@ export function TransferFromToken() {
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
             />
+            {!validTo && to !== "" && (
+                <p className="text-xs text-red-500">Invalid recipient address</p>
+            )}
 
             <input
                 className="w-full rounded border px-2 py-1"
@@ -79,6 +116,11 @@ export function TransferFromToken() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
             />
+            {!validAmount && amount !== "" && (
+                <p className="text-xs text-red-500">Invalid amount</p>
+            )}
+
+            {error && <p className="text-xs text-red-600">{error}</p>}
 
             <button
                 onClick={onTransferFrom}
@@ -96,4 +138,8 @@ export function TransferFromToken() {
         </div>
     );
 }
+
+
+
+
 
