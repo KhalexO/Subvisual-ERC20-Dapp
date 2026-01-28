@@ -6,7 +6,7 @@ This project demonstrates smart contract development with Solidity, automated te
 
 ---
 
-Features
+## Features
 
 - Wallet connection (MetaMask / injected wallets)
 - ERC20 token interactions:
@@ -21,7 +21,7 @@ Features
 
 ---
 
-Tech Stack
+## Tech Stack
 
 Smart Contracts:
 - Solidity
@@ -38,7 +38,7 @@ Frontend:
 
 ---
 
-Architecture Notes
+## Architecture Notes
 
 Next.js was chosen over Vite to reflect a production-ready Web3 setup.
 All blockchain interactions run client-side (CSR), which is required for wallet-based applications.
@@ -46,7 +46,7 @@ No server-side rendering is used for blockchain logic.
 
 ---
 
-Smart Contract
+## Smart Contract
 
 The ERC20 contract includes:
 - Standard ERC20 functions
@@ -57,7 +57,7 @@ The ERC20 contract includes:
 
 ---
 
-Automated Tests
+## Automated Tests
 
 Implemented using Foundry:
 - Mint increases balance and total supply
@@ -67,43 +67,43 @@ Implemented using Foundry:
 
 ---
 
-Prerequisites
+## Prerequisites
 
 Install Foundry:
 
-curl -L https://foundry.paradigm.xyz | bash
+```shell
 foundryup
-
+```
 Ensure Node.js (>=18) and pnpm are installed.
 
 ---
 
-Local Development
+## Local Development
 
 This project runs using three terminals.
 
 Terminal 1 – Start local blockchain:
-
+```shell
 cd contracts
 anvil
-
+```
 Terminal 2 – Deploy contract:
-
+```shell
 cd contracts
 forge script script/Deploy.s.sol \
   --rpc-url http://localhost:8545 \
   --broadcast \
   --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-
+```
 Terminal 3 – Run frontend:
-
+```shell
 cd frontend
-pnpm install
+pnpm install #first time only
 pnpm dev
-
+```
 ---
 
-Environment Variables
+## Environment Variables
 
 Create frontend/.env.local:
 
@@ -112,7 +112,7 @@ NEXT_PUBLIC_CONTRACT_ADDRESS=0xYourDeployedContractAddress
 
 ---
 
-Notes
+## Notes
 
 - Mint is only visible to the contract owner
 - UI updates automatically after transactions
@@ -120,10 +120,10 @@ Notes
 
 ---
 
-Challenge Requirements
+## Challenge Requirements
 
 - Wallet connection: implemented
 - Smart contract interaction: implemented
 - Automated tests: implemented
-- Optional testnet deployment: supported
+- Optional testnet deployment: not included (local Anvil setup only)
 
