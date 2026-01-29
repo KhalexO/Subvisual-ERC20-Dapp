@@ -88,13 +88,27 @@ Ensure Node.js (>=18) and pnpm are installed.
 
 ## Local Development(Anvil)
 
-This project runs using three terminals.
+This project supports local development using Anvil, Foundry’s local Ethereum node.
+
+The frontend does not control the network — it always follows the network selected in the user’s wallet (MetaMask).
+When MetaMask is connected to Anvil (Localhost / chainId 31337), the frontend automatically uses the locally deployed contract.
+
+### Steps
+
+This setup uses three terminals.
 
 Terminal 1 – Start local blockchain:
 ```shell
 cd contracts
-anvil /--chain-id 31337
+anvil --chain-id 31337
 ```
+
+Anvil provides:
+
+- Pre-funded test accounts
+- Known private keys
+- A local RPC endpoint at http://127.0.0.1:8545
+
 Terminal 2 – Deploy contract:
 ```shell
 cd contracts
@@ -103,12 +117,26 @@ forge script script/Deploy.s.sol \
   --broadcast \
   --private-key <ANVIL_PRIVATE_KEY>
 ```
+
+Notes:
+
+- Use one of the private keys printed by Anvil
+- The deployer account becomes the owner of the contract
+- Minting is only available when the connected wallet matches this owner address
+
 Terminal 3 – Run frontend:
 ```shell
 cd frontend
 pnpm install #first time only
 pnpm dev
 ```
+
+Usage notes:
+
+- Add the Anvil network to MetaMask (chainId 31337)
+- Import one of the Anvil private keys into MetaMask
+- Once MetaMask is connected to Localhost, the frontend automatically detects the network and contract
+
 ---
 
 ## Testnet Deployment (Sepolia)
@@ -128,9 +156,23 @@ cd frontend
 pnpm dev
 ```
 
+### Usage notes
+
 - Switch MetaMask to Sepolia
-- The frontend automatically connects to the Sepolia contract
-- No redeployment is required unless the contract changes
+- Connect any wallet to interact with the token
+- The frontend automatically:
+  - Detects the active network
+  - Uses the correct contract address for Sepolia
+  - No redeployment is required unless the smart contract changes
+
+---
+
+## Network Handling Notes
+
+- The frontend never forces a network
+- All interactions follow the network selected in MetaMask
+- If the connected network has no known contract address, the UI shows “Unsupported network”
+This approach avoids mismatches between wallet state and frontend state and reflects how production Web3 dApps behave.
 
 ---
 
