@@ -30,6 +30,7 @@ Smart Contracts:
 - Foundry (Forge, Anvil)
 
 Frontend:
+- React (via Next.js)
 - Next.js
 - TypeScript
 - Wagmi
@@ -37,6 +38,8 @@ Frontend:
 - TanStack Query
 - pnpm
 
+Wallet:
+- MetaMask (Injected provider)
 ---
 
 ## Architecture Notes
