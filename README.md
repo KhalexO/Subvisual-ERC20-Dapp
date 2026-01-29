@@ -93,7 +93,7 @@ This project runs using three terminals.
 Terminal 1 – Start local blockchain:
 ```shell
 cd contracts
-anvil
+anvil /--chain-id 31337
 ```
 Terminal 2 – Deploy contract:
 ```shell
